@@ -5,10 +5,12 @@ using System.Threading.Tasks;
 using ElectronNET.API;
 using ElectronNET.API.Entities;
 using ElectronServerBlazorEf.Data;
+using ElectronServerBlazorEf.NW;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.AspNetCore.HttpsPolicy;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
@@ -31,6 +33,12 @@ namespace ElectronServerBlazorEf
       services.AddRazorPages();
       services.AddServerSideBlazor();
       services.AddSingleton<WeatherForecastService>();
+      services.AddDbContext<NorthwindContext>(options =>
+      {
+        options.UseSqlServer(Configuration.GetConnectionString("NW"));
+      });
+      services.AddScoped<NorthwindService>();
+
     }
 
     // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

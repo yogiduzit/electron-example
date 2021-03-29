@@ -1,0 +1,40 @@
+﻿@page "/report"
+@inject ElectronServerBlazorEf.Data.NorthwindService service
+
+<h1>Categories by product</h1>
+
+@if (data == null)
+{
+  <p><em>Loading...</em></p>
+}
+else
+{
+  <table class='table table-hover'>
+  <thead>
+    <tr>
+      <th>Category</th>
+      <th># of products</th>
+    </tr>
+  </thead>
+  <tbody>
+    @foreach (var item in data)
+      {
+        <tr>
+          <td>@item.GetType().GetProperty("Name").GetValue(item)</td>
+          <td>@item.GetType().GetProperty("Count").GetValue(item)</td>
+        </tr>
+      }
+    </tbody>
+  </table>
+}
+
+
+@code {
+  List<object> data;
+
+  protected override async Task OnInitializedAsync()
+  {
+    data = await service.GetCategoriesByProductAsync();
+  }
+
+}
