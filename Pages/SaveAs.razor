@@ -1,0 +1,30 @@
+@page "/saveas/{filepath}"
+@inject ElectronServerBlazorEf.Data.NorthwindService service
+
+<h1>Export data to CSV format</h1>
+<p>File successfully saved to @Filepath.</p>
+
+@code {
+  [Parameter]
+  public string Filepath { get; set; }
+
+  public string Message { get; set; }
+
+  protected override async Task OnInitializedAsync()
+  {
+    Filepath = System.Web.HttpUtility.UrlDecode(Filepath);
+
+    System.IO.StringWriter writer = new System.IO.StringWriter();
+    writer.WriteLine("Name,Count");
+
+    var query = await service.GetCategoriesByProductAsync();
+    query.ForEach(item =>
+      {
+      writer.Write(item.GetType().GetProperty("Name").GetValue(item));
+      writer.Write(",");
+      writer.WriteLine(item.GetType().GetProperty("Count").GetValue(item));
+    });
+
+    await System.IO.File.WriteAllTextAsync(Filepath, writer.ToString());
+  }
+}

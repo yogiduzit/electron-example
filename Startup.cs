@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 using ElectronNET.API;
 using ElectronNET.API.Entities;
@@ -64,6 +65,7 @@ namespace ElectronServerBlazorEf
       {
         endpoints.MapBlazorHub();
         endpoints.MapFallbackToPage("/_Host");
+        endpoints.MapFallbackToPage("/saveas/{filepath?}", "/_Host");
       });
 
       if (HybridSupport.IsElectronActive)
@@ -74,6 +76,7 @@ namespace ElectronServerBlazorEf
 
     public async void ElectronBootstrap()
     {
+      CreateMenu();
       var browserWindow = await Electron.WindowManager.CreateWindowAsync(new BrowserWindowOptions
       {
         Width = 1152,
@@ -87,5 +90,73 @@ namespace ElectronServerBlazorEf
       browserWindow.SetTitle("Electron.NET with Blazor!");
     }
 
+    private void CreateMenu()
+    {
+      bool isMac = RuntimeInformation.IsOSPlatform(OSPlatform.OSX);
+      MenuItem[] menu = null;
+
+      MenuItem[] appMenu = new MenuItem[] {
+    new MenuItem { Role = MenuRole.about },
+    new MenuItem { Type = MenuType.separator },
+    new MenuItem { Role = MenuRole.services },
+    new MenuItem { Type = MenuType.separator },
+    new MenuItem { Role = MenuRole.hide },
+    new MenuItem { Role = MenuRole.hideothers },
+    new MenuItem { Role = MenuRole.unhide },
+    new MenuItem { Type = MenuType.separator },
+    new MenuItem { Role = MenuRole.quit }
+  };
+
+      MenuItem[] fileMenu = new MenuItem[] {
+    new MenuItem {
+        Label = "Save As...", Type = MenuType.normal, Click = async () => {
+            var mainWindow = Electron.WindowManager.BrowserWindows.First ();
+            var options = new SaveDialogOptions () {
+                Filters = new FileFilter[] {
+                new FileFilter { Name = "CSV Files", Extensions = new string[] { "csv" } }
+                }
+            };
+            string result = await Electron.Dialog.ShowSaveDialogAsync (mainWindow, options);
+            if (!string.IsNullOrEmpty (result)) {
+                result = System.Web.HttpUtility.UrlEncode(result);
+                string url = $"http://localhost:{BridgeSettings.WebPort}/saveas/{result}";
+                mainWindow.LoadURL(url);
+            }
+        }
+    },
+    new MenuItem { Type = MenuType.separator },
+    new MenuItem { Role = isMac ? MenuRole.close : MenuRole.quit }
+  };
+
+      MenuItem[] viewMenu = new MenuItem[] {
+    new MenuItem { Role = MenuRole.reload },
+    new MenuItem { Role = MenuRole.forcereload },
+    new MenuItem { Role = MenuRole.toggledevtools },
+    new MenuItem { Type = MenuType.separator },
+    new MenuItem { Role = MenuRole.resetzoom },
+    new MenuItem { Role = MenuRole.zoomin },
+    new MenuItem { Role = MenuRole.zoomout },
+    new MenuItem { Type = MenuType.separator },
+    new MenuItem { Role = MenuRole.togglefullscreen }
+  };
+
+      if (isMac)
+      {
+        menu = new MenuItem[] {
+      new MenuItem { Label = "Electron", Type = MenuType.submenu, Submenu = appMenu },
+      new MenuItem { Label = "File", Type = MenuType.submenu, Submenu = fileMenu },
+      new MenuItem { Label = "View", Type = MenuType.submenu, Submenu = viewMenu }
+    };
+      }
+      else
+      {
+        menu = new MenuItem[] {
+      new MenuItem { Label = "File", Type = MenuType.submenu, Submenu = fileMenu },
+      new MenuItem { Label = "View", Type = MenuType.submenu, Submenu = viewMenu }
+    };
+      }
+
+      Electron.Menu.SetApplicationMenu(menu);
+    }
   }
 }
